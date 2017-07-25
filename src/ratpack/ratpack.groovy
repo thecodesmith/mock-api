@@ -1,15 +1,17 @@
-import com.thecodesmith.mock.api.Route
+import com.thecodesmith.mock.api.DatabaseService
+import com.thecodesmith.mock.api.RouteService
 import org.slf4j.LoggerFactory
 
 import static ratpack.groovy.Groovy.ratpack
+import static ratpack.jackson.Jackson.fromJson
 import static ratpack.jackson.Jackson.json
-import static ratpack.jackson.Jackson.jsonNode
 
 final log = LoggerFactory.getLogger(ratpack)
 
 ratpack {
     bindings {
-        bind Route
+        bind DatabaseService
+        bind RouteService
     }
 
     handlers {
@@ -25,12 +27,19 @@ ratpack {
                 path {
                     byMethod {
                         get {
-                            render json(registry.get(Route).getAll())
+                            def router = registry.get(RouteService)
+                            render json(router.getAll())
                         }
                         post {
-                            def data = parse jsonNode()
-                            println "data: $data"
-                            render data.map { it.get('name').asText() }
+                            parse fromJson(Map) then {
+                                try {
+                                    def router = registry.get(RouteService)
+                                    render json(router.create(it))
+                                } catch (e) {
+                                    response.status 400
+                                    render json([error: e.message])
+                                }
+                            }
                         }
                     }
                 }
@@ -38,21 +47,56 @@ ratpack {
                 path(':id') {
                     byMethod {
                         get {
-                            render "a single route id: $pathTokens.id"
+                            def id = pathTokens.id as int
+                            def router = registry.get(RouteService)
+
+                            render json(router.get(id))
                         }
                         put {
-                            render "updating $pathTokens.id"
+                            parse fromJson(Map) then { Map payload ->
+                                def id = pathTokens.id as int
+                                def router = registry.get(RouteService)
+                                def result = router.update(id, payload)
+
+                                if (result) {
+                                    response.status(204).send()
+                                } else {
+                                    response.status(404)
+                                    render json([error: "No route with id: $id".toString()])
+                                }
+                            }
                         }
                         delete {
-                            render "deleting $pathTokens.id"
+                            def id = pathTokens.id as int
+                            def router = registry.get(RouteService)
+                            def result = router.delete(id)
+
+                            if (result) {
+                                response.status(204).send()
+                            } else {
+                                response.status(404)
+                                render json([error: "No route with id: $id".toString()])
+                            }
                         }
                     }
                 }
             }
         }
 
-        path(':foo:.+') {
-            render "called dynamic: $pathTokens.foo"
+        path(':path:.+') {
+            def method = request.method.toString()
+            def path = pathTokens.path
+            def router = registry.get(RouteService)
+            def route = router.getByPath(method, path)
+
+            if (!route) {
+                response.status(404)
+                render json([error: "No route matches: $method $path".toString()])
+            } else {
+                response.status(route.status)
+                        .contentType(route.content_type)
+                        .send(route.body_content)
+            }
         }
     }
 }

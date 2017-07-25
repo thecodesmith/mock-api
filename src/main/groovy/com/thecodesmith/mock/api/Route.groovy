@@ -1,32 +1,15 @@
 package com.thecodesmith.mock.api
 
-import groovy.transform.CompileStatic
+import groovy.transform.Canonical
 
-/**
- * @author Brian Stewart
- */
-@CompileStatic
+@Canonical
 class Route {
-
-    @Delegate Database database = new Database()
-
-    def getAll() {
-        sql.rows 'SELECT * FROM routes'
-    }
-
-    def create(Map data) {
-        sql.executeInsert('')
-    }
-
-    def get(int id) {
-        sql.firstRow 'SELECT * FROM routes WHERE id = ?', id
-    }
-
-    def update(String path, Map data) {
-        sql.executeUpdate('')
-    }
-
-    def delete(int id) {
-        sql.execute 'DELETE FROM routes WHERE id = ?', id
-    }
+    int id
+    String name
+    String method
+    int status
+    String path
+    boolean active
+    String content_type
+    String body_content
 }
