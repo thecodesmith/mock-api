@@ -16,10 +16,7 @@ ratpack {
 
     handlers {
         get {
-            render 'root'
-        }
-        get('foo') {
-            render 'called foo endpoint'
+            render json([message: 'See the README for API documentation'])
         }
 
         prefix('api') {
@@ -30,6 +27,7 @@ ratpack {
                             def router = registry.get(RouteService)
                             render json(router.getAll())
                         }
+
                         post {
                             parse fromJson(Map) then {
                                 try {
@@ -49,34 +47,33 @@ ratpack {
                         get {
                             def id = pathTokens.id as int
                             def router = registry.get(RouteService)
+                            def result = router.get(id)
 
-                            render json(router.get(id))
+                            if (result) {
+                                render json(result)
+                            } else {
+                                response.status(404).send()
+                            }
                         }
+
                         put {
                             parse fromJson(Map) then { Map payload ->
                                 def id = pathTokens.id as int
                                 def router = registry.get(RouteService)
                                 def result = router.update(id, payload)
+                                def status = result ? 204 : 404
 
-                                if (result) {
-                                    response.status(204).send()
-                                } else {
-                                    response.status(404)
-                                    render json([error: "No route with id: $id".toString()])
-                                }
+                                response.status(status).send()
                             }
                         }
+
                         delete {
                             def id = pathTokens.id as int
                             def router = registry.get(RouteService)
                             def result = router.delete(id)
+                            def status = result ? 204 : 404
 
-                            if (result) {
-                                response.status(204).send()
-                            } else {
-                                response.status(404)
-                                render json([error: "No route with id: $id".toString()])
-                            }
+                            response.status(status).send()
                         }
                     }
                 }
@@ -89,13 +86,13 @@ ratpack {
             def router = registry.get(RouteService)
             def route = router.getByPath(method, path)
 
-            if (!route) {
-                response.status(404)
-                render json([error: "No route matches: $method $path".toString()])
-            } else {
+            if (route) {
                 response.status(route.status)
                         .contentType(route.content_type)
                         .send(route.body_content)
+            } else {
+                response.status(404)
+                render json([error: "No route matches: $method $path".toString()])
             }
         }
     }
