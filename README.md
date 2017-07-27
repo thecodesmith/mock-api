@@ -1,5 +1,13 @@
 # Mock REST Server
 
+## Sandbox
+
+This app has a sandbox running at http://54.145.131.99:5050.
+Feel free to use it, but realize it could go away at any time.
+For a more persistent solution, deploy it yourself using the
+instructions below.
+
+
 ## API
 
 ### Endpoints
