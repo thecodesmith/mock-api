@@ -13,7 +13,7 @@ import ratpack.service.StartEvent
 class DatabaseService implements Service {
 
     String driver = 'org.sqlite.JDBC'
-    String connection = 'jdbc:sqlite:routes.db'
+    String connection = 'jdbc:sqlite:../data/routes.db'
 
     @Override
     void onStart(StartEvent event) {

@@ -23,3 +23,7 @@ idea {
         vcs 'Git'
     }
 }
+
+task buildDockerImage(type: Exec, dependsOn: installDist) {
+    commandLine 'bash', '-c', 'docker build -t thecodesmith/mock-api .'
+}
